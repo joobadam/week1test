@@ -17,6 +17,8 @@ if [ -z "$commit_message" ]; then
   exit 1
 fi
 
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+
 if ! git add .; then
   echo "❌ Error: Failed to add files to staging area."
   exit 1
@@ -28,8 +30,26 @@ if ! git commit -m "$commit_message"; then
 fi
 
 if ! git push; then
-  echo "⚠️ Warning: Commit was successful, but push failed. Please check your network or remote repository settings."
+  echo "⚠️ Warning: Commit was successful, but push failed on branch '$current_branch'."
   exit 1
 fi
 
-echo "✅ Changes successfully saved and pushed to remote repository."
+if [ -n "$2" ]; then
+  new_branch="$2"
+
+  if git checkout -b "$new_branch"; then
+    echo "🔀 Switched to new branch: $new_branch"
+  else
+    echo "❌ Error: Could not create new branch '$new_branch'."
+    exit 1
+  fi
+
+  if ! git push -u origin "$new_branch"; then
+    echo "⚠️ Warning: New branch '$new_branch' created, but push failed."
+    exit 1
+  fi
+
+  echo "✅ New branch '$new_branch' successfully created and pushed."
+fi
+
+echo "✅ Changes saved and pushed on branch '$current_branch'."
